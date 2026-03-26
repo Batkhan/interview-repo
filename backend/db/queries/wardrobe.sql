@@ -27,3 +27,13 @@ SELECT category, COUNT(*)::int AS count
 FROM wardrobe_items
 WHERE user_id = $1
 GROUP BY category;
+
+-- name: GetWardrobeStats :many
+SELECT
+    category,
+    COUNT(*)::int AS category_count,
+    COUNT(*) OVER()::int AS total_items,
+    MAX(created_at) OVER() AS latest_created_at
+FROM wardrobe_items
+WHERE user_id = $1
+GROUP BY category;
