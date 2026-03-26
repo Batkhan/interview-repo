@@ -33,7 +33,10 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
 
 // Response interceptor: resolve image URLs, retry with exponential backoff, surface friendly errors
 const IMAGE_URL_KEYS = ['image_url', 'result_image_url', 'outfit_image_url', 'user_photo_url'];
-
+/**
+ This function is used to resolve image URLs, because the backend stores only relative image paths,
+ so the frontend must convert them into usable full URLs before rendering.
+ */
 function resolveImageURLs(data: unknown): unknown {
   if (Array.isArray(data)) return data.map(resolveImageURLs);
   if (data && typeof data === 'object') {
