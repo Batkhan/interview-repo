@@ -37,7 +37,7 @@ export const useWardrobeStore = create<WardrobeState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  fetchItems: async (category) => {
+  fetchItems: async (category: string | undefined) => {
     set({ isLoading: true, error: null });
     try {
       const items = await wardrobeAPI.listItems(category || get().selectedCategory || undefined);
@@ -56,20 +56,31 @@ export const useWardrobeStore = create<WardrobeState>((set, get) => ({
     }
   },
 
-  addItem: async (req) => {
+  addItem: async (req: AddItemRequest) => {
     set({ error: null });
-    const item = await wardrobeAPI.addItem(req);
-    set((state) => ({ items: sortItems([item, ...state.items], state.sortMode) }));
-    return item;
+    try {
+      const item = await wardrobeAPI.addItem(req);
+      set((state: WardrobeState) => ({ items: sortItems([item, ...state.items], state.sortMode) }));
+      return item;
+    } catch (e: unknown) {
+      // Adding error handling because without it, the user would just be left wondering why their item didn't show up.
+      set({ error: friendlyError(e, 'Failed to add the item. Please try again.') });
+      throw e;
+    }
   },
 
-  deleteItem: async (id) => {
+  deleteItem: async (id: string) => {
     set({ error: null });
-    await wardrobeAPI.deleteItem(id);
-    set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
+    try {
+      await wardrobeAPI.deleteItem(id);
+      set((state: WardrobeState) => ({ items: state.items.filter((i: ClothingItem) => i.id !== id) }));
+    } catch (e: unknown) {
+      // If we don't catch this, the app might crash if the server is down or returns an error.
+      set({ error: friendlyError(e, 'Failed to delete the item. Please try again.') });
+    }
   },
 
-  setCategory: (category) => {
+  setCategory: (category: string) => {
     set({ selectedCategory: category });
     get().fetchItems(category);
   },
