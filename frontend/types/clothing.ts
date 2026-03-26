@@ -20,6 +20,7 @@ export interface ClothingItem {
   source_type: SourceType;
   source_url: string;
   popular_item_id: string;
+  price?: string;
   created_at: string;
   updated_at: string;
 }
