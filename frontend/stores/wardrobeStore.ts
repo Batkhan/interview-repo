@@ -10,18 +10,30 @@ interface WardrobeState {
   isLoading: boolean;
   error: string | null;
 
+  sortMode: 'newest' | 'oldest' | 'name';
   fetchItems: (category?: string) => Promise<void>;
   fetchCategories: () => Promise<void>;
   addItem: (req: AddItemRequest) => Promise<ClothingItem>;
   deleteItem: (id: string) => Promise<void>;
   setCategory: (category: string) => void;
+  setSortMode: (mode: 'newest' | 'oldest' | 'name') => void;
   clearError: () => void;
 }
+
+const sortItems = (items: ClothingItem[], mode: 'newest' | 'oldest' | 'name') => {
+  return [...items].sort((a, b) => {
+    if (mode === 'name') return a.name.localeCompare(b.name);
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return mode === 'oldest' ? dateA - dateB : dateB - dateA;
+  });
+};
 
 export const useWardrobeStore = create<WardrobeState>((set, get) => ({
   items: [],
   categories: {},
   selectedCategory: '',
+  sortMode: 'newest',
   isLoading: false,
   error: null,
 
@@ -29,7 +41,7 @@ export const useWardrobeStore = create<WardrobeState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const items = await wardrobeAPI.listItems(category || get().selectedCategory || undefined);
-      set({ items, isLoading: false });
+      set({ items: sortItems(items, get().sortMode), isLoading: false });
     } catch (e: unknown) {
       set({ isLoading: false, error: friendlyError(e, 'Couldn\'t load your wardrobe. Please try again.') });
     }
@@ -47,7 +59,7 @@ export const useWardrobeStore = create<WardrobeState>((set, get) => ({
   addItem: async (req) => {
     set({ error: null });
     const item = await wardrobeAPI.addItem(req);
-    set((state) => ({ items: [item, ...state.items] }));
+    set((state) => ({ items: sortItems([item, ...state.items], state.sortMode) }));
     return item;
   },
 
@@ -60,6 +72,10 @@ export const useWardrobeStore = create<WardrobeState>((set, get) => ({
   setCategory: (category) => {
     set({ selectedCategory: category });
     get().fetchItems(category);
+  },
+  setSortMode: (mode: 'newest' | 'oldest' | 'name') => {
+    set({ sortMode: mode });
+    set((state: WardrobeState) => ({ items: sortItems(state.items, mode) }));
   },
   clearError: () => set({ error: null }),
 }));
