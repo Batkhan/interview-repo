@@ -21,11 +21,16 @@ func NewWardrobeHandler(svc *service.WardrobeService) *WardrobeHandler {
 func (h *WardrobeHandler) ListItems(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r.Context())
 	category := r.URL.Query().Get("category")
-	items, err := h.svc.ListItems(r.Context(), userID, category)
+
+	limit := queryInt(r, "limit", 50)
+	offset := queryInt(r, "offset", 0)
+
+	items, err := h.svc.ListItems(r.Context(), userID, category, limit, offset)
 	if err != nil {
 		respondInternalError(w, err)
 		return
 	}
+
 	respondJSON(w, http.StatusOK, items)
 }
 
